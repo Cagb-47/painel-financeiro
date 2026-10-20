@@ -8,6 +8,12 @@ App simples de orçamento familiar para sair do aperto financeiro. Abre no celul
 - **Metas:** reserva em três etapas (sair do sufoco, guardar, prosperar) e o seu compromisso escrito.
 - **Guia:** perguntas antes de comprar, roteiro para negociar a fatura e conversa com a família.
 
+## Instalar no celular
+- **Android (Chrome):** abra o link → menu ⋮ → **Instalar app** (ou "Adicionar à tela inicial").
+- **iPhone (Safari):** abra o link → botão Compartilhar → **Adicionar à Tela de Início**.
+
+Depois de instalado, abre em tela cheia e funciona mesmo sem internet.
+
 ## Dados
 Ficam só no navegador do aparelho. Use **Ajustes → Copiar cópia de segurança** de vez em quando.
 
