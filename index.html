@@ -211,7 +211,7 @@ const MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agos
 /* ---------- dados iniciais (outubro de 2026, do painel antigo) ---------- */
 function seed(){
   return {
-    v:1, nome:"Carlos", renda:13436, fixas:8215.80,
+    v:1, nome:"Carlos e Daniela", renda:13436, fixas:8215.80,
     cats:[
       {id:"mercado",nome:"Mercado",ico:"🛒",teto:1000},
       {id:"transporte",nome:"Combustível e transporte",ico:"⛽",teto:1000},
@@ -238,6 +238,7 @@ let S;
 function load(){try{const r=localStorage.getItem(KEY); if(r){S=JSON.parse(r); return;}}catch(e){} S=seed();}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 load();
+if(S.nome==="Carlos"){S.nome="Carlos e Daniela";save();}
 
 /* ---------- utilidades ---------- */
 const brl=v=>(v<0?"-":"")+"R$ "+Math.abs(v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -313,8 +314,8 @@ function vHoje(){
   if(chips.length) hero+=`<div class="chips">${chips.join("")}</div>`;
 
   const why=S.compromisso.porque
-    ? `<div class="why"><span class="eyebrow">Meu porquê</span><q>${esc(S.compromisso.porque)}</q>${S.compromisso.frase?`<span class="small muted">${esc(S.compromisso.frase)}</span>`:""}</div>`
-    : `<div class="card"><span class="eyebrow">Um minuto que muda o mês</span><p><b>Por que vocês querem sair do aperto?</b> Quem escreve o próprio motivo cumpre mais. Ele vai aparecer aqui todo dia.</p><button class="btn" data-act="compromisso">Escrever meu porquê</button></div>`;
+    ? `<div class="why"><span class="eyebrow">Nosso porquê</span><q>${esc(S.compromisso.porque)}</q>${S.compromisso.frase?`<span class="small muted">${esc(S.compromisso.frase)}</span>`:""}</div>`
+    : `<div class="card"><span class="eyebrow">Um minuto que muda o mês</span><p><b>Por que vocês querem sair do aperto?</b> Quem escreve o próprio motivo cumpre mais. Ele vai aparecer aqui todo dia.</p><button class="btn" data-act="compromisso">Escrever nosso porquê</button></div>`;
 
   const alertas=[];
   S.cats.forEach(c=>{
@@ -388,7 +389,7 @@ function vMetas(){
   <section class="card"><h2>De onde pode vir o dinheiro</h2>
     <p class="num">Renda ${brl0(S.renda)} − contas fixas ${brl0(S.fixas)} − planejado nas categorias ${brl0(M.teto)} = <b>${brl0(margem)}</b> livres por mês.</p>
     <p class="small muted">Com o plano atual, quase nada sobra. As três alavancas: tudo que sobrar nas categorias no fim do mês, o que você desistir na espera de 24h e cada conta fixa que conseguir baixar.</p></section>
-  <section class="card"><h2>Meu compromisso</h2>
+  <section class="card"><h2>Nosso compromisso</h2>
     ${c.porque?`<div class="why"><q>${esc(c.porque)}</q>${c.frase?`<span class="small">${esc(c.frase)}</span>`:""}${c.assinado?`<span class="small muted">Assinado em ${fmtData(c.assinado)}</span>`:""}</div>
     <div class="btnrow"><button class="btn sec" data-act="compromisso">Editar</button><button class="btn sec" data-act="compartilhar">Mostrar para a família</button></div>`
     :`<p>Escreva o motivo e o compromisso. Compromissos escritos e contados para outras pessoas são os que a gente mais cumpre.</p><button class="btn" data-act="compromisso">Escrever agora</button>`}
@@ -573,7 +574,7 @@ function openAdd(pre){
 const acts={
   compromisso(){
     const c=S.compromisso;
-    sheet(`<div class="sheethead"><h2>Meu compromisso</h2><button class="iconbtn" data-close aria-label="Fechar">✕</button></div>
+    sheet(`<div class="sheethead"><h2>Nosso compromisso</h2><button class="iconbtn" data-close aria-label="Fechar">✕</button></div>
       <label class="f" for="cPq">Por que vocês querem sair do aperto?<textarea class="i" id="cPq" maxlength="160" placeholder="Ex.: Dormir tranquilo e dar ao Kevin um futuro sem dívidas.">${esc(c.porque)}</textarea></label>
       <label class="f" for="cFr">O que você se compromete a fazer?<textarea class="i" id="cFr" maxlength="200" placeholder="Ex.: Anotar todo gasto no mesmo dia e esperar 24h antes de qualquer compra fora do plano.">${esc(c.frase)}</textarea></label>
       <p class="hint">Escreva com as suas palavras. Ao assinar, a data fica registrada.</p>
@@ -584,7 +585,7 @@ const acts={
   },
   compartilhar(){
     const c=S.compromisso; const E=etapa();
-    const t=`Meu compromisso com a nossa família:\n\n"${c.porque}"\n${c.frase?"\n"+c.frase+"\n":""}\nNossa próxima meta: ${E.nome.toLowerCase()} (${brl0(E.alvo)} guardados). Conto com vocês.`;
+    const t=`Carlos e Daniela, nosso compromisso com a família:\n\n"${c.porque}"\n${c.frase?"\n"+c.frase+"\n":""}\nNossa próxima meta: ${E.nome.toLowerCase()} (${brl0(E.alvo)} guardados). Conto com vocês.`;
     sheet(`<div class="sheethead"><h2>Mostrar para a família</h2><button class="iconbtn" data-close aria-label="Fechar">✕</button></div>
       <p class="hint">Contar o compromisso para outras pessoas aumenta a chance de cumprir. Copie e mande no grupo da família.</p>
       <div class="script" id="txtComp">${esc(t)}</div><button class="btn block" data-copy2="txtComp" type="button">Copiar mensagem</button>`,sh=>{
@@ -598,7 +599,7 @@ const acts={
   guardarEcon(){ const v=S.economizado; S.reserva.guardado+=v; S.reserva.hist.push({data:ymd(new Date()),valor:v,obs:"espera 24h"}); S.economizado=0; save(); render(); toast(brl(v)+" foram para a reserva."); },
   ajustes(){
     sheet(`<div class="sheethead"><h2>Ajustes</h2><button class="iconbtn" data-close aria-label="Fechar">✕</button></div>
-      <label class="f" for="jNome">Seu nome<input class="i" id="jNome" value="${esc(S.nome)}" maxlength="30"></label>
+      <label class="f" for="jNome">Nomes<input class="i" id="jNome" value="${esc(S.nome)}" maxlength="40"></label>
       <label class="f" for="jRenda">Renda líquida do mês<input class="i num" id="jRenda" inputmode="decimal" value="${S.renda.toFixed(2).replace(".",",")}"></label>
       <label class="f" for="jFixas">Contas fixas do mês<input class="i num" id="jFixas" inputmode="decimal" value="${S.fixas.toFixed(2).replace(".",",")}"></label>
       <h3>Teto de cada parte</h3>
