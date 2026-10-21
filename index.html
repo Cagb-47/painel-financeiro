@@ -458,10 +458,12 @@ function vCodigo(){
 }
 function vImportar(){
   return `<header class="top"><div><span class="eyebrow">Família conectada</span><h1>Trazer os dados</h1></div></header>
-  <p>Este é o primeiro acesso da família. Cole a cópia de segurança do app antigo (Ajustes → Copiar cópia de segurança) para trazer tudo o que já foi lançado.</p>
-  <div class="card"><label class="f" for="impTxt">Cópia de segurança<textarea class="i" id="impTxt" placeholder="Cole aqui"></textarea></label>
+  <p>Este é o primeiro acesso da família. Toque no botão para trazer o orçamento e os gastos de outubro que já estavam no app.</p>
+  <button class="btn block" data-act="importarOutubro">Trazer os dados de outubro</button>
+  <details class="g"><summary><h3>Tenho uma cópia de segurança</h3><span class="chev" aria-hidden="true">▾</span></summary><div class="body"><label class="f" for="impTxt">Cópia de segurança<textarea class="i" id="impTxt" placeholder="Cole aqui"></textarea></label>
   <button class="btn" data-act="importar">Importar dados</button>
-  <button class="linkbtn" data-act="comecarVazio">Começar sem dados antigos</button></div>`;
+</div></details>
+  <button class="linkbtn" data-act="comecarVazio">Começar sem dados antigos</button>`;
 }
 function vQuem(){
   return `<header class="top"><div><span class="eyebrow">Primeiro acesso neste celular</span><h1>Quem está usando?</h1></div></header>
@@ -796,12 +798,12 @@ function openAdd(pre){
 }
 
 /* ---- outras ações ---- */
-async function importarR(o){
+async function importarR(o,txt){
   const cols=["lanc","espera","movs","receitas"];
   try{
     if(o.cfg) await db.doc("familia/config").set(o.cfg);
     for(const c of cols){for(const [id,d] of Object.entries(o[c]||{})){const {id:_x,...body}=d; await db.collection(c).doc(id).set(body);}}
-    await subirVersao("Importou os dados do app antigo"); return true;
+    await subirVersao(txt||"Importou os dados do app antigo"); return true;
   }catch(e){erroGravar(e);return false;}
 }
 const instalado=(()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;}catch(e){return false;}})();
@@ -813,6 +815,19 @@ const acts={
     let o; try{o=JSON.parse(document.getElementById("impTxt").value);}catch(e){}
     if(!o||!o.cfg){toast("Esse texto não é uma cópia de segurança válida.");return;}
     if(await importarR(o)) toast("Dados importados.");
+  },
+  async importarOutubro(){
+    const cfg={...cfgPadrao(),renda:13436,fixas:8215.80,metaReserva:8215.80};
+    const L=(id,data,valor,cat,desc,pag,em)=>[id,{data,valor,cat,desc,pag,por:"Carlos",em}];
+    const lanc=Object.fromEntries([
+      L("s1","2026-10-09",1757.10,"fatura","Fatura Itaú","cartao","2026-10-09T12:00:00.000Z"),
+      L("s2","2026-10-07",390,"mercado","Tenda","avista","2026-10-07T12:00:00.000Z"),
+      L("s3","2026-10-08",160,"lanches","BK","avista","2026-10-08T12:03:00.000Z"),
+      L("s4","2026-10-07",50,"transporte","Gasolina","avista","2026-10-07T12:01:00.000Z"),
+      L("s5","2026-10-08",36,"transporte","Uber","avista","2026-10-08T12:01:00.000Z"),
+      L("s6","2026-10-08",17,"transporte","Transporte","avista","2026-10-08T12:02:00.000Z")]);
+    if(!quem){quem="Carlos";}
+    if(await importarR({cfg,lanc,espera:{},movs:{},receitas:{}},"Versão inicial com os dados de outubro")){quem=null;try{quem=localStorage.getItem(WHO);}catch(e){} render(); toast("Dados de outubro trazidos.");}
   },
   async comecarVazio(){ try{await db.doc("familia/config").set(cfgPadrao()); await subirVersao("Começou a família do zero");}catch(e){erroGravar(e);} },
   novaReceita(){openAdd({tipo:"receita"});},
