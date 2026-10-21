@@ -14,8 +14,10 @@ App simples de orçamento familiar para sair do aperto financeiro. Abre no celul
 
 Depois de instalado, abre em tela cheia e funciona mesmo sem internet.
 
-## Dados
-Ficam só no navegador do aparelho. Use **Ajustes → Copiar cópia de segurança** de vez em quando.
+## Dados e sincronização
+Os dados ficam no Firebase (Firestore) do projeto da família e sincronizam entre os celulares. Cada celular entra com o **código da família**, digitado uma vez no primeiro acesso. O código não fica no repositório.
+
+A configuração do Firebase fica em `config.js`.
 
 ## Publicar no GitHub Pages
 Settings → Pages → Branch `main` / pasta `/ (root)` → Save. O app fica em `https://<usuario>.github.io/painel-financeiro/`.
