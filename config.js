@@ -1,6 +1,6 @@
 /* Configuração do Firebase do projeto da família (não é senha) */
 window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB5A3Zk22d7fci7Egqlj4cFb1NA_bkoOY0",
+  apiKey: "AIzaSyB5A3Zk22d7fci7Egq1j4cFb1NA_bKoOY0",
   authDomain: "painel-familia-22309.firebaseapp.com",
   projectId: "painel-familia-22309",
   storageBucket: "painel-familia-22309.firebasestorage.app",
