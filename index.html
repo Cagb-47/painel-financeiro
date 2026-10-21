@@ -269,7 +269,8 @@ let fila=Promise.resolve();
 function erroGravar(e){
   if(e&&e.code==="invalid_argument") toast("Este acesso é só de leitura. Peça ao dono do app para te convidar como Editor(a).");
   else if(e&&e.code==="quota_exceeded") toast("O espaço do app está cheio. Apague lançamentos antigos.");
-  else toast("Não consegui salvar agora. Verifique a internet e tente de novo.");
+  else if(e&&e.code==="permission-denied") toast("O Firebase recusou a gravação (regras do Firestore).");
+  else toast("Não consegui salvar ("+((e&&e.code)||"erro")+"). Verifique a internet.");
 }
 async function comRetry(fn){try{return await fn();}catch(e){if(e&&e.code==="unavailable"){await new Promise(r=>setTimeout(r,400+Math.random()*600));return fn();}throw e;}}
 
@@ -312,6 +313,27 @@ const store={
 
 /* ---------- conectar ---------- */
 const FKEY="painel-familia-codigo";
+let diag=null;
+function explicar(e,etapa){
+  const c=(e&&e.code)||"desconhecido"; const msg=(e&&e.message)||String(e);
+  const mapa={
+    "auth/operation-not-allowed":"O login Anônimo não está ativado. No Firebase: Authentication → Método de login → Anônimo → Ativar → Salvar.",
+    "auth/admin-restricted-operation":"O login Anônimo não está ativado. No Firebase: Authentication → Método de login → Anônimo → Ativar → Salvar.",
+    "auth/configuration-not-found":"O Authentication ainda não foi iniciado no Firebase. Abra Authentication → Vamos começar → ative Anônimo.",
+    "auth/api-key-not-valid.-please-pass-a-valid-api-key.":"A apiKey do config.js está errada. Copie de novo o firebaseConfig.",
+    "auth/invalid-api-key":"A apiKey do config.js está errada. Copie de novo o firebaseConfig.",
+    "auth/network-request-failed":"Sem internet ou a rede bloqueou o Firebase. Tente em outra rede (4G).",
+    "auth/unauthorized-domain":"O domínio do site não está autorizado. No Firebase: Authentication → Configurações → Domínios autorizados → adicionar cagb-47.github.io.",
+    "permission-denied":"As regras do Firestore estão bloqueando. No Firestore → Regras, cole as regras de novo e clique em Publicar.",
+    "not-found":"O banco Firestore não foi criado. No Firebase: Firestore Database → Criar banco de dados.",
+    "failed-precondition":"O banco Firestore não foi criado ou ainda está sendo criado. Abra Firestore Database no Firebase.",
+    "unavailable":"Não consegui falar com o Firebase. Verifique a internet.",
+    "sem-resposta":"O banco não respondeu em 20 segundos. Normalmente é o Firestore que não foi criado, ou a internet."
+  };
+  diag={etapa,code:c,msg,dica:mapa[c]||"Erro não previsto. Mande um print desta tela."};
+  console.error("[Painel] "+etapa+": "+c+" — "+msg);
+  modo="erro"; render();
+}
 let codigo=null; try{codigo=localStorage.getItem(FKEY);}catch(e){}
 let fbBump=null, cfgOk=false;
 function iniciarFirebase(){
@@ -330,11 +352,14 @@ function iniciarFirebase(){
     await fs.runTransaction(async t=>{const s=await t.get(r);const m=s.exists?s.data():{versao:0,hist:[]};const v=(m.versao||0)+1;
       t.set(r,{versao:v,em:agora(),por,hist:[{v,em:agora(),por,o},...(m.hist||[])].slice(0,20)});});};
   modo="carregando"; render();
-  fb.auth(app).signInAnonymously().then(()=>conectar(fdb)).catch(()=>{modo="offline";render();toast("Sem internet para entrar. Tente de novo.");});
+  fb.auth(app).signInAnonymously().then(()=>{
+    let respondeu=false; const t=setTimeout(()=>{if(!respondeu)explicar({code:"sem-resposta",message:"timeout"},"Ler dados");},20000);
+    fdb.doc("familia/config").get().then(()=>{respondeu=true;clearTimeout(t);conectar(fdb);}).catch(e=>{respondeu=true;clearTimeout(t);explicar(e,"Ler dados");});
+  }).catch(e=>explicar(e,"Login"));
 }
 function conectar(d){
   db=d; modo="sync"; render();
-  const err=e=>{if(e&&(e.code==="revoked"||e.code==="permission-denied")){toast("Sem permissão para acessar os dados da família.");}};
+  const err=e=>{if(window.FIREBASE_CONFIG)explicar(e,"Sincronizar");else if(e&&e.code==="revoked")toast("O acesso aos dados foi retirado.");};
   db.doc("familia/config").onSnapshot(s=>{R.cfg=s.exists?s.data():null; cfgOk=true; derivar(); render();},err);
   db.doc("familia/meta").onSnapshot(s=>{R.meta=s.exists?s.data():null; render();},err);
   ["lanc","espera","movs","receitas"].forEach(col=>db.collection(col).onSnapshot(q=>{
@@ -404,6 +429,11 @@ document.getElementById("fab").addEventListener("click",()=>{if(S&&quem)openAdd(
 function render(){
   document.querySelectorAll(".nav [data-tab]").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab?"page":"false"));
   const bd=document.getElementById("badge");
+  if(modo==="erro"&&diag){bd.hidden=true;document.getElementById("fab").hidden=true;
+    view.innerHTML=`<header class="top"><div><span class="eyebrow">Diagnóstico</span><h1>Não consegui conectar</h1></div></header>
+    <div class="alert bad"><b>${esc(diag.dica)}</b><p class="small">Etapa: ${esc(diag.etapa)} · código: <span class="num">${esc(diag.code)}</span></p><p class="small muted">${esc(diag.msg)}</p></div>
+    <div class="btnrow"><button class="btn" data-act="tentar">Tentar de novo</button><button class="btn sec" data-act="trocarCodigo">Trocar código</button></div>`;
+    bind();return;}
   if(modo==="codigo"){bd.hidden=true;document.getElementById("fab").hidden=true;view.innerHTML=vCodigo();bind();return;}
   if(!S&&cfgOk&&modo==="sync"&&window.FIREBASE_CONFIG){bd.hidden=true;document.getElementById("fab").hidden=true;view.innerHTML=vImportar();bind();return;}
   if(!S){bd.hidden=true; document.getElementById("fab").hidden=true;
@@ -776,6 +806,8 @@ async function importarR(o){
 }
 const instalado=(()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;}catch(e){return false;}})();
 const acts={
+  tentar(){location.reload();},
+  trocarCodigo(){try{localStorage.removeItem(FKEY);}catch(e){} location.reload();},
   fechar(){ try{window.close();}catch(e){} setTimeout(()=>toast("Os dados já estão salvos. Para fechar, use o botão Voltar ou deslize o app para cima."),250); },
   async importar(){
     let o; try{o=JSON.parse(document.getElementById("impTxt").value);}catch(e){}
